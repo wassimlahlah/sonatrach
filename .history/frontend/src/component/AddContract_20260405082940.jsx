@@ -1,0 +1,145 @@
+import React, { useEffect, useState } from "react";
+import api from "../api/axios";
+import toast from "react-hot-toast";
+import getProductTypes from "../context/services/productService"
+import { createContract } from "../context/services/contractService";
+
+function AddContract() {
+  const [form, setForm] = useState({
+    typeProduct: "",
+    qteGlobale: "",
+    startDate: "",
+    endDate: "",
+  });
+
+  const [productTypes, setProductTypes] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch product types
+  useEffect(() => {
+    const fetchProductTypes = async () => {
+      try {
+        const res = await getProductTypes("/catalog/ProductTypes/");
+        setProductTypes(res.data);
+      } catch (err) {
+        toast.error("Error fetching product types:", err);
+      }
+    };
+
+    fetchProductTypes();
+  }, []);
+
+  // Handle input change
+  const handleChange = (e) => {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  // Submit form
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      setLoading(true);
+      
+      if (!form.typeProduct || !form.startDate || !form.endDate) {
+        toast.error("Please fill all required fields");
+        return;
+      }
+
+      const payload = {
+        typeProduct: form.typeProduct,
+        qteGlobale: Number(form.qteGlobale),
+        startDate: new Date(form.startDate).toISOString(),
+        endDate: new Date(form.endDate).toISOString(),
+      };
+      
+
+      await createContract("/catalog/contract/", payload);
+
+      toast.success("Contract created successfully ");
+
+      // reset form
+      setForm({
+        typeProduct: "",
+        qteGlobale: "",
+        startDate: "",
+        endDate: "",
+      });
+
+    } catch (error) {
+      toast.error("Failed to create contract ");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: "400px", margin: "auto" }}>
+      <h2>Add Contract</h2>
+
+      <form onSubmit={handleSubmit}>
+
+        {/* Product Type */}
+        <div>
+          <label>Product Type:</label>
+          <select
+            name="typeProduct"
+            value={form.typeProduct}
+            onChange={handleChange}
+          >
+            <option value="">Select Product Type</option>
+            {productTypes.map((type) => (
+              <option key={type.id} value={type.id}>
+                {type.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Quantity */}
+        <div>
+          <label>Quantity:</label>
+          <input
+            type="number"
+            name="qteGlobale"
+            value={form.qteGlobale}
+            onChange={handleChange}
+          />
+        </div>
+
+        {/* Start Date */}
+        <div>
+          <label>Start Date:</label>
+          <input
+            type="date"
+            name="startDate"
+            value={form.startDate}
+            onChange={handleChange}
+          />
+        </div>
+
+        {/* End Date */}
+        <div>
+          <label>End Date:</label>
+          <input
+            type="date"
+            name="endDate"
+            value={form.endDate}
+            onChange={handleChange}
+          />
+        </div>
+
+        {/* Submit */}
+        <button type="submit" disabled={loading}>
+          {loading ? "Saving..." : "Create Contract"}
+        </button>
+
+      </form>
+    </div>
+  );
+}
+
+export default AddContract;
